@@ -1,2 +1,2 @@
 scrap:
-	python3 src/scraper.py
+	python3 src/main.py

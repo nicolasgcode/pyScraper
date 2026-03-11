@@ -115,7 +115,6 @@ def download_files_from_filial(page, carpeta: str):
                     download.save_as(path)
                     print(f"Saving at: {path}")
 
-        # ── Siguiente página ──
         siguiente = get_next_page_button(frame)
         if siguiente is None:
             print(f"\nLast page: ({pagina_actual}). Filial complete!.")

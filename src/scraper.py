@@ -1,5 +1,7 @@
 from playwright.sync_api import sync_playwright
 
+import os
+
 from helpers import (
     download_files_from_filial,
     filter_tramites_by_fecha_cierre,
@@ -28,7 +30,6 @@ def run(fecha_desde, fecha_hasta):
             print(f"{'='*50}")
 
             carpeta = f"{BASE_PATH}/{filial}"
-            import os
 
             os.makedirs(carpeta, exist_ok=True)
 
