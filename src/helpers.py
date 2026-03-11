@@ -5,9 +5,6 @@ from config import LOGIN_URL, USERNAME, PASSWORD, FILIAL_URL
 
 def login(page: Page):
 
-    print(USERNAME)
-    print(PASSWORD)
-
     try:
         page.goto(LOGIN_URL)
 
@@ -134,6 +131,8 @@ def get_next_page_button(frame):
 def download_files_from_filial(page: Page, carpeta: str):
     frame = page.frame(url=lambda u: "anexofacturacion" in u)
     pagina_actual = 1
+    valid_tramites = 0
+    downloaded_files = 0
 
     while True:
         print(f"\n📄 Procesando página {pagina_actual}...")
@@ -161,6 +160,8 @@ def download_files_from_filial(page: Page, carpeta: str):
                 print(f"Skipping: {numero_tramite}")
                 continue
 
+            valid_tramites += 1
+
             print(f"Processing: {numero_tramite}")
 
             for j in range(links.count()):
@@ -174,6 +175,12 @@ def download_files_from_filial(page: Page, carpeta: str):
                     path = os.path.join(carpeta, download.suggested_filename)
                     download.save_as(path)
                     print(f"Saving at: {path}")
+                    downloaded_files += 1
+
+            if downloaded_files == 0 or valid_tramites == 0:
+                if os.path.exists(carpeta):
+                    os.rmdir(carpeta)
+                    print(f"No files downloaded for {numero_tramite}. Folder removed.")
 
         siguiente = get_next_page_button(frame)
         if siguiente is None:
