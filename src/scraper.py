@@ -26,7 +26,7 @@ def run(fecha_desde, fecha_hasta):
 
         for idx, filial in enumerate(filiales):
             print(f"\n{'='*50}")
-            print(f"🏢 [{idx+1}/{len(filiales)}] Procesando filial: {filial}")
+            print(f"🏢 [{idx+1}/{len(filiales)}] Processing filial: {filial}")
             print(f"{'='*50}")
 
             carpeta = f"{BASE_PATH}/{filial}"
@@ -40,5 +40,5 @@ def run(fecha_desde, fecha_hasta):
 
             download_files_from_filial(page, carpeta)
 
-        print(f"\n🎉 ¡Proceso completo! {len(filiales)} filiales procesadas.")
+        print(f"\n Process complete! {len(filiales)} filiales processed.")
         browser.close()
