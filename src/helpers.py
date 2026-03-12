@@ -230,10 +230,19 @@ def wait(page):
 
 def isValidDate(prompt="Fecha (DD/MM/YYYY): "):
     while True:
-        date = input(prompt)
+        date_str = input(prompt)
 
         try:
-            datetime.strptime(date, "%d/%m/%Y")
-            return date
+            fecha = datetime.strptime(date_str, "%d/%m/%Y")
+            hoy = datetime.now()
+
+            if fecha > hoy:
+                print(
+                    "No se pueden ingresar fechas futuras. Por favor, intentelo nuevamente."
+                )
+                continue
+
+            return date_str
+
         except ValueError:
-            print(f"Fecha incorrecta: {date}. Formato esperado: DD/MM/YYYY")
+            print(f"Fecha incorrecta: {date_str}. Formato esperado: DD/MM/YYYY")
