@@ -1,6 +1,7 @@
+from datetime import datetime
 import os
 from playwright.sync_api import Page
-from config import LOGIN_URL, USERNAME, PASSWORD, FILIAL_URL
+from config import BASE_PATH, LOGIN_URL, USERNAME, PASSWORD, FILIAL_URL
 
 
 def login(page: Page):
@@ -14,16 +15,16 @@ def login(page: Page):
         page.click("text=Ingresar")
 
         wait(page)
-
-        print(
-            "Login successful. Logged in as: "
-            + USERNAME
-            + "\n"
-            + "Navigating to filiales..."
-        )
+        print("\nLogin exitoso!\n")
+        print(f"{'='*50}")
+        print("Logueado como: " + USERNAME)
+        print(f"{'='*50}")
+        print("\nNavegando a sección de filiales...\n")
 
     except Exception as e:
-        print(f"Login failed. Please check your credentials and try again. Error: {e}")
+        print(
+            f"Login fallido. Por favor, checkea tus credenciales e intentalo de nuevo. Error: {e}"
+        )
         raise
 
 
@@ -34,7 +35,7 @@ def get_filiales(page: Page) -> list[str]:
         page.click("text=Profesionales")
         wait(page)
     except Exception as e:
-        print(f"Error navigating to filiales: {e}")
+        print(f"Error navegando a filiales: {e}")
         raise
 
     try:
@@ -45,15 +46,14 @@ def get_filiales(page: Page) -> list[str]:
             texto = el.query_selector(".hB-lb-text").inner_text()
             numero = texto.split("·")[0].strip()
             filiales.append(numero)
-        print(f"🏢 Filiales encontradas: {filiales}")
+        print(f'Filiales encontradas: {len(filiales)} -> "{filiales}"')
         return filiales
     except Exception as e:
-        print(f"Couldn't load filiales: {e}")
+        print(f"No se pudieron cargar las filiales: {e}")
         raise
 
 
 def go_to_filial(page: Page, filial_numero: str):
-    print(f"Entering filial: {filial_numero}...")
     page.goto(FILIAL_URL.format(filial_numero=filial_numero))
     page.wait_for_selector("text=En otro momento", timeout=60000)
     page.click("text=En otro momento")
@@ -102,9 +102,11 @@ def filter_tramites_by_fecha_cierre(page: Page, fecha_desde: str, fecha_hasta: s
             }}""",
             timeout=15000,
         )
-        print("Filter applied successfully.")
-    except Exception:
-        print("Failed to apply filter.")
+        print("\nFiltro por fechas aplicado correctamente.")
+        print("\nComenzando la descarga de archivos...")
+    except Exception as e:
+        print(f"\nError al aplicar filtro de fechas: {e}")
+        raise
 
 
 def get_primer_tramite(frame) -> str:
@@ -128,21 +130,28 @@ def get_next_page_button(frame):
     return None
 
 
-def download_files_from_filial(page: Page, carpeta: str):
+def download_files_from_filial(page: Page, filial: str) -> bool:
     frame = page.frame(url=lambda u: "anexofacturacion" in u)
-    pagina_actual = 1
-    valid_tramites = 0
-    downloaded_files = 0
+    current_page = 1
+    downloaded_files = False
 
     while True:
-        print(f"\n📄 Procesando página {pagina_actual}...")
-        frame.wait_for_selector("tbody tr")
 
-        todas_las_filas = frame.locator("tbody tr")
-        total = todas_las_filas.count()
+        frame.wait_for_selector("tbody tr, h4.alert-heading", timeout=10000)
+
+        if (frame.locator("h4.alert-heading")).is_visible():
+            return False
+
+        all_rows = frame.locator("tbody tr")
+        total = all_rows.count()
+
+        if total == 0:
+            return False
+
+        carpeta = f"{BASE_PATH}/{filial}"
 
         for i in range(total):
-            fila = todas_las_filas.nth(i)
+            fila = all_rows.nth(i)
             links = fila.locator("a")
 
             if links.count() == 0:
@@ -154,41 +163,38 @@ def download_files_from_filial(page: Page, carpeta: str):
                 continue
 
             numero_tramite = primer_link_texto
-            print(f"🔍 Trámite: {numero_tramite}")
 
             if not numero_tramite.startswith("01-44"):
-                print(f"Skipping: {numero_tramite}")
+                print(f"\nSalteando: {numero_tramite}")
                 continue
-
-            valid_tramites += 1
-
-            print(f"Processing: {numero_tramite}")
 
             for j in range(links.count()):
                 link = links.nth(j)
                 texto = link.inner_text().strip()
                 if "CSV - Cabecera" in texto or "CSV - Detalle" in texto:
-                    print(f"⬇️  Descargando: {texto}")
+
+                    os.makedirs(carpeta, exist_ok=True)
+
+                    print(f"\nProcesando trámite: {numero_tramite}\n")
+
+                    print(f"Descargando: {texto}")
                     with frame.page.expect_download() as dl:
                         link.click()
                     download = dl.value
                     path = os.path.join(carpeta, download.suggested_filename)
                     download.save_as(path)
-                    print(f"Saving at: {path}")
-                    downloaded_files += 1
-
-            if downloaded_files == 0 or valid_tramites == 0:
-                if os.path.exists(carpeta):
-                    os.rmdir(carpeta)
-                    print(f"No files downloaded for {numero_tramite}. Folder removed.")
+                    print(f"\nGuardando en: {path}")
+                    downloaded_files = True
 
         siguiente = get_next_page_button(frame)
         if siguiente is None:
-            print(f"\nLast page: ({pagina_actual}). Filial complete!.")
+            print(f"\nPágina final: ({current_page}). Filial recorrida con éxito!.")
             break
 
         primer_tramite_actual = get_primer_tramite(frame)
-        print(f"Going to page: {pagina_actual + 1}...")
+        print(f"\n{'-'*50}")
+        print(f"\nAccediendo a página: {current_page + 1}...")
+        print(f"\n{'-'*50}")
         siguiente.click()
 
         try:
@@ -206,11 +212,24 @@ def download_files_from_filial(page: Page, carpeta: str):
                 timeout=15000,
             )
         except Exception:
-            print("Assuming last page reached.")
+            print("Asumiendo que se llegó a la última página.")
             break
 
-        pagina_actual += 1
+        current_page += 1
+
+    return downloaded_files
 
 
 def wait(page):
     page.wait_for_load_state("networkidle", timeout=60000)
+
+
+def isValidDate(prompt="Fecha (DD/MM/YYYY): "):
+    while True:
+        date = input(prompt)
+
+        try:
+            datetime.strptime(date, "%d/%m/%Y")
+            return date
+        except ValueError:
+            print(f"Fecha incorrecta: {date}. Formato esperado: DD/MM/YYYY")
