@@ -249,7 +249,7 @@ def wait(page):
     page.wait_for_load_state("networkidle", timeout=60000)
 
 
-def isValidDate(prompt="Fecha (DD/MM/YYYY): "):
+def is_valid_date(prompt="Fecha (DD/MM/YYYY): "):
     while True:
         date_str = input(prompt)
 
@@ -294,7 +294,7 @@ def scraper_crash_log(error, context=""):
         f.write(traceback.format_exc())
 
 
-def confirmDate(fecha_desde, fecha_hasta):
+def confirm_date(fecha_desde, fecha_hasta):
     print("\nEl intervalo de fechas indicados es:\n")
     print(f" - Desde: {fecha_desde}")
     print(f" - Hasta: {fecha_hasta}")
@@ -317,10 +317,10 @@ def run_app():
         )
         print("\nFormato: DD/MM/AAAA\n")
 
-        fecha_desde = isValidDate("Fecha desde: ")
-        fecha_hasta = isValidDate("Fecha hasta: ")
+        fecha_desde = is_valid_date("Fecha desde: ")
+        fecha_hasta = is_valid_date("Fecha hasta: ")
 
-        if confirmDate(fecha_desde, fecha_hasta):
+        if confirm_date(fecha_desde, fecha_hasta):
             break
 
         print("\nPor favor, vuelve a ingresar el rango de fechas.\n")
