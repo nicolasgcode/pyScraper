@@ -90,20 +90,24 @@ def filter_tramites_by_fecha_cierre(page: Page, fecha_desde: str, fecha_hasta: s
 
     try:
         frame.wait_for_function(
-            f"""() => {{
-                const filas = document.querySelectorAll('tbody tr');
+            f"""(prev) => {{
+                const alert = document.querySelector("h4.alert-heading");
+                if (alert) return true;
+
+                const filas = document.querySelectorAll("tbody tr");
                 for (const fila of filas) {{
-                    const link = fila.querySelector('a');
+                    const link = fila.querySelector("a");
                     if (link && /^\\d/.test(link.innerText.trim())) {{
-                        return link.innerText.trim() !== '{primer_antes}';
+                        return link.innerText.trim() !== prev;
                     }}
                 }}
                 return false;
             }}""",
+            arg=primer_antes,
             timeout=15000,
         )
         print("\nFiltro por fechas aplicado correctamente.")
-        print("\nComenzando la descarga de archivos...")
+        print("\nBuscando archivos para descargar...")
     except Exception as e:
         print(f"\nError al aplicar filtro de fechas: {e}")
         raise
@@ -165,7 +169,7 @@ def download_files_from_filial(page: Page, filial: str) -> bool:
             numero_tramite = primer_link_texto
 
             if not numero_tramite.startswith("01-44"):
-                print(f"\nSalteando: {numero_tramite}")
+                print(f"\nSalteando trámite: {numero_tramite}")
                 continue
 
             for j in range(links.count()):
@@ -193,8 +197,8 @@ def download_files_from_filial(page: Page, filial: str) -> bool:
 
         primer_tramite_actual = get_primer_tramite(frame)
         print(f"\n{'-'*50}")
-        print(f"\nAccediendo a página: {current_page + 1}...")
-        print(f"\n{'-'*50}")
+        print(f"Accediendo a página: {current_page + 1}...")
+        print(f"{'-'*50}")
         siguiente.click()
 
         try:

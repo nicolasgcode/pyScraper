@@ -34,7 +34,7 @@ def run(fecha_desde, fecha_hasta):
 
             if not has_downloads:
                 print(
-                    f"\nNo se encontraron trámites para la filial {filial} en el rango de fechas especificado."
+                    f"\nNo se encontraron anexos para la filial {filial} en el rango de fechas especificado."
                 )
 
         print(f"\nProceso completado! {len(filiales)} filiales procesadas.")
