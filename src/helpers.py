@@ -143,7 +143,7 @@ def download_files_from_filial(page: Page, filial: str) -> bool:
 
         frame.wait_for_selector("tbody tr, h4.alert-heading", timeout=10000)
 
-        if (frame.locator("h4.alert-heading")).is_visible():
+        if (frame.locator("h4.alert-heading")).count() > 0:
             return False
 
         all_rows = frame.locator("tbody tr")
@@ -182,7 +182,7 @@ def download_files_from_filial(page: Page, filial: str) -> bool:
                     print(f"\nProcesando trámite: {numero_tramite}\n")
 
                     print(f"Descargando: {texto}")
-                    with frame.page.expect_download() as dl:
+                    with frame.page.expect_download(timeout=20000) as dl:
                         link.click()
                     download = dl.value
                     path = os.path.join(carpeta, download.suggested_filename)
@@ -238,11 +238,11 @@ def isValidDate(prompt="Fecha (DD/MM/YYYY): "):
 
             if fecha > hoy:
                 print(
-                    "No se pueden ingresar fechas futuras. Por favor, intentelo nuevamente."
+                    "\nNo se pueden ingresar fechas futuras. Por favor, intentelo nuevamente."
                 )
                 continue
 
             return date_str
 
         except ValueError:
-            print(f"Fecha incorrecta: {date_str}. Formato esperado: DD/MM/YYYY")
+            print(f"\nFecha incorrecta: {date_str}. Formato esperado: DD/MM/YYYY")
