@@ -1,3 +1,5 @@
+import traceback
+from datetime import datetime
 from playwright.sync_api import sync_playwright
 
 
@@ -7,35 +9,58 @@ from helpers import (
     get_filiales,
     go_to_filial,
     login,
+    scraper_crash_log,
+    skipped_files_log,
     wait,
 )
 
 
 def run(fecha_desde, fecha_hasta):
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
-        page = browser.new_page()
 
-        login(page)
+    skipped_files = []
 
-        filiales = get_filiales(page)
+    try:
+        with sync_playwright() as p:
 
-        for idx, filial in enumerate(filiales):
-            print(f"\n{'='*50}")
-            print(f"[{idx+1}/{len(filiales)}] Procesando filial: {filial}")
-            print(f"{'='*50}")
+            browser = p.chromium.launch(headless=False)
+            page = browser.new_page()
 
-            go_to_filial(page, filial)
+            login(page)
 
-            filter_tramites_by_fecha_cierre(page, fecha_desde, fecha_hasta)
-            wait(page)
+            filiales = get_filiales(page)
 
-            has_downloads = download_files_from_filial(page, filial)
+            for idx, filial in enumerate(filiales):
+                print(f"\n{'='*50}")
+                print(f"[{idx+1}/{len(filiales)}] Procesando filial: {filial}")
+                print(f"{'='*50}")
 
-            if not has_downloads:
-                print(
-                    f"\nNo se encontraron anexos para la filial {filial} en el rango de fechas especificado."
-                )
+                try:
+                    go_to_filial(page, filial)
 
-        print(f"\nProceso completado! {len(filiales)} filiales procesadas.")
-        browser.close()
+                    filter_tramites_by_fecha_cierre(page, fecha_desde, fecha_hasta)
+                    wait(page)
+
+                    has_downloads = download_files_from_filial(
+                        page, filial, skipped_files
+                    )
+
+                    if not has_downloads:
+                        print(f"\nNo se encontraron anexos para la filial {filial}")
+
+                except Exception as e:
+                    print(f"\nError procesando filial {filial}: {e}")
+                    scraper_crash_log(e, context=f"Error procesando filial {filial}")
+                    skipped_files.append(f"{filial} - ERROR: {e}")
+                    continue
+
+            browser.close()
+
+    except Exception as e:
+
+        scraper_crash_log(e)
+
+    finally:
+
+        skipped_files_log(skipped_files)
+
+        print(f"\nProceso completado. Filiales procesadas: {len(filiales)}")

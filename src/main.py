@@ -1,13 +1,9 @@
-from helpers import isValidDate
+from helpers import launch_scraper, launch_scraper, scraper_crash_log
 from scraper import run
 
-print("\nIngrese el rango de fechas para filtrar los trámites por fecha de cierre.")
-print("\nFormato: DD/MM/AAAA\n")
-fecha_desde = isValidDate("Fecha desde: ")
-fecha_hasta = isValidDate("Fecha hasta: ")
-print(f"\n{'='*50}")
-print("Iniciando pyScraper...")
-print(f"{'='*50}")
-print("\nNavegando a login...\n")
+fecha_desde, fecha_hasta = launch_scraper()
 
-run(fecha_desde, fecha_hasta)
+try:
+    run(fecha_desde, fecha_hasta)
+except Exception as e:
+    scraper_crash_log(e, context="Error fatal del scraper")

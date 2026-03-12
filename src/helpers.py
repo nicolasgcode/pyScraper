@@ -1,5 +1,6 @@
 from datetime import datetime
 import os
+import traceback
 from playwright.sync_api import Page
 from config import BASE_PATH, LOGIN_URL, USERNAME, PASSWORD, FILIAL_URL
 
@@ -25,6 +26,7 @@ def login(page: Page):
         print(
             f"Login fallido. Por favor, checkea tus credenciales e intentalo de nuevo. Error: {e}"
         )
+        scraper_crash_log(e, context="Error en el login")
         raise
 
 
@@ -36,6 +38,7 @@ def get_filiales(page: Page) -> list[str]:
         wait(page)
     except Exception as e:
         print(f"Error navegando a filiales: {e}")
+        scraper_crash_log(e, context="Error navegando a filiales")
         raise
 
     try:
@@ -50,6 +53,7 @@ def get_filiales(page: Page) -> list[str]:
         return filiales
     except Exception as e:
         print(f"No se pudieron cargar las filiales: {e}")
+        scraper_crash_log(e, context="Error cargando filiales")
         raise
 
 
@@ -110,6 +114,7 @@ def filter_tramites_by_fecha_cierre(page: Page, fecha_desde: str, fecha_hasta: s
         print("\nBuscando archivos para descargar...")
     except Exception as e:
         print(f"\nError al aplicar filtro de fechas: {e}")
+        scraper_crash_log(e, context="Error al aplicar filtro de fechas")
         raise
 
 
@@ -134,7 +139,7 @@ def get_next_page_button(frame):
     return None
 
 
-def download_files_from_filial(page: Page, filial: str) -> bool:
+def download_files_from_filial(page: Page, filial: str, skipped_files: list) -> bool:
     frame = page.frame(url=lambda u: "anexofacturacion" in u)
     current_page = 1
     downloaded_files = False
@@ -142,6 +147,14 @@ def download_files_from_filial(page: Page, filial: str) -> bool:
     while True:
 
         frame.wait_for_selector("tbody tr, h4.alert-heading", timeout=10000)
+
+        inst = (
+            frame.locator("p.card-title.mb-1", has_text="ANEXOS DE :")
+            .inner_text()
+            .strip()
+            .replace("ANEXOS DE :", "")
+            .strip()
+        )
 
         if (frame.locator("h4.alert-heading")).count() > 0:
             return False
@@ -152,7 +165,7 @@ def download_files_from_filial(page: Page, filial: str) -> bool:
         if total == 0:
             return False
 
-        carpeta = f"{BASE_PATH}/{filial}"
+        carpeta = f"{BASE_PATH}/{filial} - {inst}"
 
         for i in range(total):
             fila = all_rows.nth(i)
@@ -169,6 +182,7 @@ def download_files_from_filial(page: Page, filial: str) -> bool:
             numero_tramite = primer_link_texto
 
             if not numero_tramite.startswith("01-44"):
+                skipped_files.append(f"{filial} - {numero_tramite} - {inst}")
                 print(f"\nSalteando trámite: {numero_tramite}")
                 continue
 
@@ -246,3 +260,62 @@ def isValidDate(prompt="Fecha (DD/MM/YYYY): "):
 
         except ValueError:
             print(f"\nFecha incorrecta: {date_str}. Formato esperado: DD/MM/YYYY")
+
+
+def skipped_files_log(skipped_files):
+    with open("log_archivos_salteados.txt", "a", encoding="utf-8") as f:
+        f.write(f"Fecha: {datetime.now()}\n")
+        for item in skipped_files:
+            f.write(f"{item}\n")
+
+
+def scraper_crash_log(error, context=""):
+    with open("log_scraper_crash", "a", encoding="utf-8") as f:
+        f.write("\n" + "=" * 60 + "\n")
+        f.write("SCRAPER ERROR\n")
+        f.write(f"Fecha: {datetime.now()}\n")
+
+        if context:
+            f.write(f"Contexto: {context}\n")
+
+        f.write(f"\nError: {str(error)}\n\n")
+        f.write(traceback.format_exc())
+
+
+def confirmDate(fecha_desde, fecha_hasta):
+    print("El intervalo de fechas indicados es:\n")
+    print(f" - Desde: {fecha_desde}")
+    print(f" - Hasta: {fecha_hasta}")
+    while True:
+        confirm = input("\n¿Son correctas las fechas? (s/n): ").strip().lower()
+        if confirm == "s":
+            return True
+        elif confirm == "n":
+            return False
+        else:
+            print("Por favor, ingresa 's' para sí o 'n' para no.")
+
+
+def launch_scraper():
+
+    while True:
+
+        print(
+            "\nIngrese el rango de fechas para filtrar los trámites por fecha de cierre."
+        )
+        print("\nFormato: DD/MM/AAAA\n")
+
+        fecha_desde = isValidDate("Fecha desde: ")
+        fecha_hasta = isValidDate("Fecha hasta: ")
+
+        if confirmDate(fecha_desde, fecha_hasta):
+            break
+
+        print("\nPor favor, vuelve a ingresar el rango de fechas.\n")
+
+    print(f"\n{'='*50}")
+    print("Iniciando pyScraper...")
+    print(f"{'='*50}")
+    print("\nNavegando a login...\n")
+
+    return fecha_desde, fecha_hasta
