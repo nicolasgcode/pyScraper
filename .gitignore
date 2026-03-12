@@ -4,6 +4,7 @@ venv/
 env/
 ENV/
 .env
+log_*.txt
 
 # Archivos de compilación y caché de Python
 __pycache__/

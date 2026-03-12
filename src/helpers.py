@@ -139,7 +139,9 @@ def get_next_page_button(frame):
     return None
 
 
-def download_files_from_filial(page: Page, filial: str, skipped_files: list) -> bool:
+def download_files_from_filial(
+    page: Page, filial: str, skipped_files: list, fecha_desde: str, fecha_hasta: str
+) -> bool:
     frame = page.frame(url=lambda u: "anexofacturacion" in u)
     current_page = 1
     downloaded_files = False
@@ -147,6 +149,9 @@ def download_files_from_filial(page: Page, filial: str, skipped_files: list) -> 
     while True:
 
         frame.wait_for_selector("tbody tr, h4.alert-heading", timeout=10000)
+
+        if (frame.locator("h4.alert-heading")).count() > 0:
+            return False
 
         inst = (
             frame.locator("p.card-title.mb-1", has_text="ANEXOS DE :")
@@ -156,9 +161,6 @@ def download_files_from_filial(page: Page, filial: str, skipped_files: list) -> 
             .strip()
         )
 
-        if (frame.locator("h4.alert-heading")).count() > 0:
-            return False
-
         all_rows = frame.locator("tbody tr")
         total = all_rows.count()
 
@@ -166,6 +168,11 @@ def download_files_from_filial(page: Page, filial: str, skipped_files: list) -> 
             return False
 
         carpeta = f"{BASE_PATH}/{filial} - {inst}"
+
+        sub_carpeta = os.path.join(
+            carpeta,
+            f"{fecha_desde.replace('/', '-')}_a_{fecha_hasta.replace('/', '-')}",
+        )
 
         for i in range(total):
             fila = all_rows.nth(i)
@@ -191,7 +198,7 @@ def download_files_from_filial(page: Page, filial: str, skipped_files: list) -> 
                 texto = link.inner_text().strip()
                 if "CSV - Cabecera" in texto or "CSV - Detalle" in texto:
 
-                    os.makedirs(carpeta, exist_ok=True)
+                    os.makedirs(sub_carpeta, exist_ok=True)
 
                     print(f"\nProcesando trámite: {numero_tramite}\n")
 
@@ -199,14 +206,14 @@ def download_files_from_filial(page: Page, filial: str, skipped_files: list) -> 
                     with frame.page.expect_download(timeout=20000) as dl:
                         link.click()
                     download = dl.value
-                    path = os.path.join(carpeta, download.suggested_filename)
+                    path = os.path.join(sub_carpeta, download.suggested_filename)
                     download.save_as(path)
                     print(f"\nGuardando en: {path}")
                     downloaded_files = True
 
         siguiente = get_next_page_button(frame)
         if siguiente is None:
-            print(f"\nPágina final: ({current_page}). Filial recorrida con éxito!.")
+            print(f"\nPágina final: ({current_page}). Filial procesada con éxito!.")
             break
 
         primer_tramite_actual = get_primer_tramite(frame)
@@ -274,8 +281,8 @@ def scraper_crash_log(error, context=""):
     print(
         "La aplicación se detuvo por un error inesperado. Revisar log de errores para más detalles."
     )
-    print(f"\n{'='*50}")
-    with open("log_scraper_crash", "a", encoding="utf-8") as f:
+    print(f"{'='*50}")
+    with open("log_scraper_crash.txt", "a", encoding="utf-8") as f:
         f.write("\n" + "=" * 60 + "\n")
         f.write("SCRAPER ERROR\n")
         f.write(f"Fecha: {datetime.now()}\n")
@@ -288,7 +295,7 @@ def scraper_crash_log(error, context=""):
 
 
 def confirmDate(fecha_desde, fecha_hasta):
-    print("El intervalo de fechas indicados es:\n")
+    print("\nEl intervalo de fechas indicados es:\n")
     print(f" - Desde: {fecha_desde}")
     print(f" - Hasta: {fecha_hasta}")
     while True:

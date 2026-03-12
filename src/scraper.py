@@ -1,4 +1,3 @@
-import traceback
 from datetime import datetime
 from playwright.sync_api import sync_playwright
 
@@ -11,7 +10,6 @@ from helpers import (
     login,
     scraper_crash_log,
     skipped_files_log,
-    wait,
 )
 
 
@@ -38,10 +36,9 @@ def run_scrapper(fecha_desde, fecha_hasta):
                     go_to_filial(page, filial)
 
                     filter_tramites_by_fecha_cierre(page, fecha_desde, fecha_hasta)
-                    wait(page)
 
                     has_downloads = download_files_from_filial(
-                        page, filial, skipped_files
+                        page, filial, skipped_files, fecha_desde, fecha_hasta
                     )
 
                     if not has_downloads:
