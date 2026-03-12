@@ -15,7 +15,7 @@ from helpers import (
 )
 
 
-def run(fecha_desde, fecha_hasta):
+def run_scrapper(fecha_desde, fecha_hasta):
 
     skipped_files = []
 

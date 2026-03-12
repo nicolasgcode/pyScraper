@@ -252,14 +252,14 @@ def isValidDate(prompt="Fecha (DD/MM/YYYY): "):
 
             if fecha > hoy:
                 print(
-                    "\nNo se pueden ingresar fechas futuras. Por favor, intentelo nuevamente."
+                    "\nNo se pueden ingresar fechas futuras. Por favor, intentelo nuevamente.\n"
                 )
                 continue
 
             return date_str
 
         except ValueError:
-            print(f"\nFecha incorrecta: {date_str}. Formato esperado: DD/MM/YYYY")
+            print(f"\nFecha incorrecta: {date_str}. Formato esperado: DD/MM/YYYY\n")
 
 
 def skipped_files_log(skipped_files):
@@ -270,6 +270,11 @@ def skipped_files_log(skipped_files):
 
 
 def scraper_crash_log(error, context=""):
+    print(f"\n{'='*50}")
+    print(
+        "La aplicación se detuvo por un error inesperado. Revisar log de errores para más detalles."
+    )
+    print(f"\n{'='*50}")
     with open("log_scraper_crash", "a", encoding="utf-8") as f:
         f.write("\n" + "=" * 60 + "\n")
         f.write("SCRAPER ERROR\n")
@@ -296,7 +301,7 @@ def confirmDate(fecha_desde, fecha_hasta):
             print("Por favor, ingresa 's' para sí o 'n' para no.")
 
 
-def launch_scraper():
+def run_app():
 
     while True:
 
