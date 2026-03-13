@@ -1,26 +1,42 @@
 from datetime import datetime
 import os
+import re
+from getpass import getpass
 import traceback
 from playwright.sync_api import Page
-from config import BASE_PATH, LOGIN_URL, USERNAME, PASSWORD, FILIAL_URL
+from config import BASE_PATH, LOGIN_URL, FILIAL_URL
 
 
-def login(page: Page):
+def login(page: Page, username: str, password: str):
 
     try:
         page.goto(LOGIN_URL)
 
-        page.fill("input[placeholder='Ingresá tu email']", USERNAME)
-        page.fill("input[placeholder='Ingresá tu contraseña']", PASSWORD)
+        page.fill("input[placeholder='Ingresá tu email']", username)
+        page.fill("input[placeholder='Ingresá tu contraseña']", password)
 
         page.click("text=Ingresar")
 
         wait(page)
+
+        login_error = page.locator("#idErrLogMail, #idErrLogPas")
+
+        if login_error.count() > 0:
+
+            print(
+                f"\nCredenciales incorrectas. Por favor, verifique email y contraseña."
+            )
+            return False
+
+        wait(page)
+
         print("\nLogin exitoso!\n")
         print(f"{'='*50}")
-        print("Logueado como: " + USERNAME)
+        print("Logueado como: " + username)
         print(f"{'='*50}")
         print("\nNavegando a sección de filiales...\n")
+
+        return True
 
     except Exception as e:
         print(
@@ -308,17 +324,67 @@ def confirm_date(fecha_desde, fecha_hasta):
             print("Por favor, ingresa 's' para sí o 'n' para no.")
 
 
+def get_date_range_from_input():
+    print("\nIngrese el rango de fechas para filtrar los trámites por fecha de cierre.")
+    print("\nFormato: DD/MM/AAAA\n")
+
+    fecha_desde = is_valid_date("Fecha desde: ")
+    fecha_hasta = is_valid_date("Fecha hasta: ")
+    return fecha_desde, fecha_hasta
+
+
+def get_credentials_from_input():
+    print("\nIngrese sus credenciales de acceso.")
+    print("\nFormato email: <usuario>@grupoorono.com.ar\n")
+
+    username = is_valid_email("Ingresá tu email: ")
+    password = is_valid_password("Ingresá tu contraseña: ")
+    return username, password
+
+
+def is_valid_email(prompt="Email: "):
+    pattern = r"^[a-zA-Z0-9._%+-]+@grupoorono\.com\.ar$"
+
+    while True:
+        email = input(prompt)
+
+        if re.match(pattern, email):
+            return email
+        else:
+            print("\nEmail inválido. Debe ser formato: usuario@grupoorono.com.ar\n")
+
+
+def is_valid_password(prompt="Contraseña: "):
+    while True:
+        password = getpass(prompt)
+
+        if password.strip() == "":
+            print("\nLa contraseña no puede estar vacía.\n")
+            continue
+
+        return password
+
+
+def continue_scraping():
+    while True:
+        cont = (
+            input("\n¿Desea procesar filiales de otro usuario? (s/n): ").strip().lower()
+        )
+        if cont == "s":
+            return True
+        elif cont == "n":
+            return False
+        else:
+            print("Por favor, ingresa 's' para sí o 'n' para no.")
+
+
 def run_app():
 
     while True:
 
-        print(
-            "\nIngrese el rango de fechas para filtrar los trámites por fecha de cierre."
-        )
-        print("\nFormato: DD/MM/AAAA\n")
+        username, password = get_credentials_from_input()
 
-        fecha_desde = is_valid_date("Fecha desde: ")
-        fecha_hasta = is_valid_date("Fecha hasta: ")
+        fecha_desde, fecha_hasta = get_date_range_from_input()
 
         if confirm_date(fecha_desde, fecha_hasta):
             break
@@ -330,4 +396,4 @@ def run_app():
     print(f"{'='*50}")
     print("\nNavegando a login...\n")
 
-    return fecha_desde, fecha_hasta
+    return username, password, fecha_desde, fecha_hasta

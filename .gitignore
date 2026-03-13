@@ -5,6 +5,7 @@ env/
 ENV/
 .env
 log_*.txt
+.cache_ggshield
 
 # Archivos de compilación y caché de Python
 __pycache__/

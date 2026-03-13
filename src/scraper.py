@@ -2,17 +2,20 @@ from playwright.sync_api import sync_playwright
 
 
 from helpers import (
+    continue_scraping,
     download_files_from_filial,
     filter_tramites_by_fecha_cierre,
+    get_credentials_from_input,
     get_filiales,
     go_to_filial,
     login,
+    run_app,
     scraper_crash_log,
     skipped_files_log,
 )
 
 
-def run_scrapper(fecha_desde, fecha_hasta):
+def run_scrapper(username, password, fecha_desde, fecha_hasta):
 
     skipped_files = []
 
@@ -22,7 +25,11 @@ def run_scrapper(fecha_desde, fecha_hasta):
             browser = p.chromium.launch(headless=False)
             page = browser.new_page()
 
-            login(page)
+            while True:
+
+                if login(page, username, password):
+                    break
+                username, password = get_credentials_from_input()
 
             filiales = get_filiales(page)
 
