@@ -1,5 +1,5 @@
-from helpers import continue_scraping, run_app, scraper_crash_log
-from scraper import run_scrapper
+from helpers import continue_scraping, get_scraper_config, scraper_crash_log
+from scraper import run_scraper
 
 
 def main():
@@ -7,8 +7,8 @@ def main():
     while True:
 
         try:
-            username, password, fecha_desde, fecha_hasta = run_app()
-            run_scrapper(username, password, fecha_desde, fecha_hasta)
+            username, password, fecha_desde, fecha_hasta = get_scraper_config()
+            run_scraper(username, password, fecha_desde, fecha_hasta)
 
             if not continue_scraping():
                 print("\nFinalizando aplicación.\n")

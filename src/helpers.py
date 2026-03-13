@@ -380,7 +380,7 @@ def continue_scraping():
             print("Por favor, ingresa 's' para sí o 'n' para no.")
 
 
-def run_app():
+def get_scraper_config():
 
     while True:
 

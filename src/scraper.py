@@ -13,7 +13,7 @@ from helpers import (
 )
 
 
-def run_scrapper(username, password, fecha_desde, fecha_hasta):
+def run_scraper(username, password, fecha_desde, fecha_hasta):
 
     skipped_files = []
     filiales = []
