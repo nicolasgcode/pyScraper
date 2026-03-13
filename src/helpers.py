@@ -240,16 +240,17 @@ def download_files_from_filial(
 
         try:
             frame.wait_for_function(
-                f"""() => {{
-                    const filas = document.querySelectorAll('tbody tr');
-                    for (const fila of filas) {{
-                        const link = fila.querySelector('a');
-                        if (link && /^\\d/.test(link.innerText.trim())) {{
-                            return link.innerText.trim() !== '{primer_tramite_actual}';
-                        }}
-                    }}
-                    return false;
-                }}""",
+                """(prev) => {
+            const filas = document.querySelectorAll('tbody tr');
+            for (const fila of filas) {
+                const link = fila.querySelector('a');
+                if (link && /^\\d/.test(link.innerText.trim())) {
+                    return link.innerText.trim() !== prev;
+                }
+            }
+            return false;
+        }""",
+                arg=primer_tramite_actual,
                 timeout=15000,
             )
         except Exception:
@@ -286,10 +287,11 @@ def is_valid_date(prompt="Fecha (DD/MM/YYYY): "):
 
 
 def skipped_files_log(skipped_files):
-    with open("log_archivos_salteados.txt", "a", encoding="utf-8") as f:
-        f.write(f"Fecha: {datetime.now()}\n")
-        for item in skipped_files:
-            f.write(f"{item}\n")
+    if skipped_files:
+        with open("log_archivos_salteados.txt", "a", encoding="utf-8") as f:
+            f.write(f"Fecha: {datetime.now()}\n")
+            for item in skipped_files:
+                f.write(f"{item}\n")
 
 
 def scraper_crash_log(error, context=""):

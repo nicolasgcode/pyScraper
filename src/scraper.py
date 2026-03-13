@@ -2,14 +2,12 @@ from playwright.sync_api import sync_playwright
 
 
 from helpers import (
-    continue_scraping,
     download_files_from_filial,
     filter_tramites_by_fecha_cierre,
     get_credentials_from_input,
     get_filiales,
     go_to_filial,
     login,
-    run_app,
     scraper_crash_log,
     skipped_files_log,
 )
@@ -18,6 +16,8 @@ from helpers import (
 def run_scrapper(username, password, fecha_desde, fecha_hasta):
 
     skipped_files = []
+    filiales = []
+    attempts = 1
 
     try:
         with sync_playwright() as p:
@@ -29,7 +29,14 @@ def run_scrapper(username, password, fecha_desde, fecha_hasta):
 
                 if login(page, username, password):
                     break
+                if attempts >= 3:
+                    print("\nDemasiados intentos fallidos. Saliendo...")
+                    browser.close()
+                    exit(1)
+
                 username, password = get_credentials_from_input()
+
+                attempts += 1
 
             filiales = get_filiales(page)
 
